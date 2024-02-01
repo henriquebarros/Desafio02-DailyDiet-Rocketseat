@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto"
 import { FastifyInstance } from "fastify"
+import { knex } from "../database"
 import { z } from "zod"
 
 
@@ -7,7 +9,7 @@ export async function mealsRoutes(app:FastifyInstance){
         const createMealBodySchema = z.object({
             name: z.string(),
             date_meals: z.coerce.date().refine((data)=>{
-                console.log(data > new Date())
+                //.refine: Refinement functions should not throw. Instead they should return a falsy value to signal failure.
                 return data < new Date()
             }, {
                 message: 'Invalid date'
@@ -18,16 +20,24 @@ export async function mealsRoutes(app:FastifyInstance){
 
         const { name, date_meals, within_diet } = createMealBodySchema.parse( request.body )
 
-        console.log(name, date_meals, within_diet )
+        let sessionId = request.cookies.sessionId
+
+        if(!sessionId){
+            sessionId = randomUUID()
+            reply.cookie('sessionId', sessionId, {
+                path: '/',
+                maxAge: 60 * 60 * 24 * 7, // 7 days
+            })
+        }
+        
+        const meal = await knex('meals').insert({
+            id: randomUUID(),
+            name,
+            date_meals: date_meals.toISOString().slice(0, 19).replace("T", " "),
+            within_diet,
+            session_id: sessionId,
+        })
+
+        return reply.status(201).send()
     })
 }
-
-/**
- *         table.uuid('id').primary()
-        table.text('name').notNullable()
-        table.timestamp('date_meals').defaultTo(knex.fn.now()).notNullable()
-        table.boolean('within_diet').defaultTo(true).notNullable()
-        table.timestamp('created_at').defaultTo(knex.fn.now()).notNullable()
-        table.timestamp('updated_at').defaultTo(knex.fn.now()).notNullable()
-        table.uuid('session_id').after('id').index()
- */
