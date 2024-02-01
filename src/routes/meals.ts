@@ -14,6 +14,22 @@ export async function mealsRoutes(app:FastifyInstance){
 
         return {meals}
     })
+    app.get('/:id', {preHandler:[checkSessionIdExists]},async (request, reply) => {
+        const getMealsParamsSchema = z.object({
+            id: z.string().uuid()
+        })
+
+        const { id } = getMealsParamsSchema.parse( request.params )
+        const { sessionId } = request.cookies
+
+
+        const meal = await knex('meals').where({
+            id,
+            session_id: sessionId
+        }).first()
+
+        return {meal}
+    })
     app.post('/', async (request, reply)=>{
         const createMealBodySchema = z.object({
             name: z.string(),
