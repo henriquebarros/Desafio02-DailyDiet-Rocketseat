@@ -2,7 +2,7 @@ import fastify from 'fastify'
 import cookie from '@fastify/cookie'
 
 
-import { mealsRoutes } from './routes/meals'
+import { mealsRoutes } from './routes/meals.routes'
 
 export const app = fastify()
 
