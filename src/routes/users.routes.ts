@@ -4,7 +4,7 @@ import { knex } from "../database"
 import { z } from "zod"
 
 
-export async function mealsRoutes(app:FastifyInstance){
+export async function usersRoutes(app:FastifyInstance){
 
     app.post('/', async (request, reply)=>{
         const createMealBodySchema = z.object({
