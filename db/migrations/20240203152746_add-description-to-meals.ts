@@ -1,16 +1,13 @@
-import type { Knex } from "knex";
-
+import type { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
-    await knex.schema.alterTable('meals',(table)=>{
-        table.text('description').after('name').notNullable()
-    })
+  await knex.schema.alterTable('meals', (table) => {
+    table.text('description').after('name').notNullable()
+  })
 }
-
 
 export async function down(knex: Knex): Promise<void> {
-    await knex.schema.alterTable('meals',(table)=>{
-        table.dropColumn('description')
-    })
+  await knex.schema.alterTable('meals', (table) => {
+    table.dropColumn('description')
+  })
 }
-

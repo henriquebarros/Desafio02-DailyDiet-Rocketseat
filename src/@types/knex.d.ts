@@ -7,7 +7,7 @@ declare module 'knex/types/tables' {
       id: string
       name: string
       description: string
-      date_meals: string
+      date_meals: number
       within_diet: boolean
       created_at: string
       updated_at: string

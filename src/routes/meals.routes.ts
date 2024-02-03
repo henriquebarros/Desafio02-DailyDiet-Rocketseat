@@ -47,15 +47,7 @@ export async function mealsRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const createMealBodySchema = z.object({
         name: z.string(),
-        date_meals: z.coerce.date().refine(
-          (data) => {
-            // .refine: Refinement functions should not throw. Instead they should return a falsy value to signal failure.
-            return data < new Date()
-          },
-          {
-            message: 'Invalid date',
-          },
-        ),
+        date_meals: z.coerce.date(),
         within_diet: z.boolean(),
         description: z.string(),
       })
@@ -66,13 +58,46 @@ export async function mealsRoutes(app: FastifyInstance) {
       await knex('meals').insert({
         id: randomUUID(),
         name,
-        date_meals: date_meals.toISOString().slice(0, 19).replace('T', ' '),
+        date_meals: date_meals.getTime(),
         within_diet,
         description,
         user_id: request.user?.id,
       })
 
       return reply.status(201).send()
+    },
+  )
+  app.put(
+    '/:id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const paramsMealSchema = z.object({ id: z.string().uuid() })
+
+      const { id } = paramsMealSchema.parse(request.params)
+
+      const findMeal = await knex('meals').where({ id }).first()
+      if (!findMeal) {
+        return reply.status(404).send({ error: 'Meal not found' })
+      }
+
+      const bodyMealSchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        date_meals: z.coerce.date(),
+        within_diet: z.boolean(),
+      })
+
+      const { name, description, date_meals, within_diet } =
+        bodyMealSchema.parse(request.body)
+
+      await knex('meals').where({ id }).update({
+        name,
+        description,
+        within_diet,
+        date_meals: date_meals.getTime(),
+      })
+
+      return reply.status(204).send()
     },
   )
 }
