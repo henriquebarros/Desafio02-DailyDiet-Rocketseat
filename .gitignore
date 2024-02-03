@@ -1,5 +1,15 @@
-# Dependencies
-node_modules
+# Ignorar o diretorio node_modules
+#Dependencies
+node_modules/
 
 # Database
 db/*.db
+
+
+
+# Environment
+.env
+.env.test
+
+# Build
+build
