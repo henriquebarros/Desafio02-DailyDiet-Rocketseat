@@ -6,6 +6,58 @@ import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.get(
+    '/metrics',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      // Quantidade total de refeições registradas
+      const qtdeMealsWithinDiet = await knex('meals').where({
+        user_id: request.user?.id,
+      })
+
+      // Quantidade total de refeições dentro da dieta
+      const [qtdeMealsWithinDietTrue] = await knex('meals')
+        .where({
+          user_id: request.user?.id,
+          within_diet: true,
+        })
+        .count('id', { as: 'total' })
+
+      // Quantidade total de refeições fora da dieta
+      const [qtdeMealsWithinDietFalse] = await knex('meals')
+        .where({
+          user_id: request.user?.id,
+          within_diet: false,
+        })
+        .count('id', { as: 'total' })
+      // Melhor sequência de refeições dentro da dieta
+
+      const { bestOnDietSequence } = qtdeMealsWithinDiet.reduce(
+        (acc, meal) => {
+          if (meal.within_diet) {
+            acc.currentSequence += 1
+          } else {
+            acc.currentSequence = 0
+          }
+
+          if (acc.currentSequence > acc.bestOnDietSequence) {
+            acc.bestOnDietSequence = acc.currentSequence
+          }
+
+          return acc
+        },
+        { bestOnDietSequence: 0, currentSequence: 0 },
+      )
+
+      return reply.send({
+        totalMeals: qtdeMealsWithinDiet.length,
+        totalMealsOnDiet: qtdeMealsWithinDietTrue.total,
+        totalMealsOffDiet: qtdeMealsWithinDietFalse.total,
+        bestOnDietSequence,
+      })
+    },
+  )
+
+  app.get(
     '/',
     { preHandler: [checkSessionIdExists] },
     async (request, reply) => {
@@ -41,6 +93,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       return reply.send({ meal })
     },
   )
+
   app.post(
     '/',
     { preHandler: [checkSessionIdExists] },
