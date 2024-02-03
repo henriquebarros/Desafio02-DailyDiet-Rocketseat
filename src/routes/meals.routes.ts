@@ -9,10 +9,11 @@ export async function mealsRoutes(app:FastifyInstance){
 
 
     app.get('/', {preHandler:[checkSessionIdExists]},async (request, reply) => {
-        const { sessionId } = request.cookies
-        const meals = await knex('meals').select().where('session_id', sessionId)
+        const meals = await knex('meals').where({
+            user_id: request.user?.id
+        }).orderBy('date_meals','desc')
 
-        return {meals}
+        return reply.send({meals})
     })
     app.get('/:id', {preHandler:[checkSessionIdExists]},async (request, reply) => {
         const getMealsParamsSchema = z.object({
@@ -20,17 +21,18 @@ export async function mealsRoutes(app:FastifyInstance){
         })
 
         const { id } = getMealsParamsSchema.parse( request.params )
-        const { sessionId } = request.cookies
-
 
         const meal = await knex('meals').where({
-            id,
-            session_id: sessionId
+            id
         }).first()
 
-        return {meal}
+        if(!meal){
+            return reply.status(404).send({error: 'Meal not found'})
+        }
+
+        return reply.send({meal})
     })
-    app.post('/', async (request, reply)=>{
+    app.post('/', {preHandler:[checkSessionIdExists]}, async (request, reply)=>{
         const createMealBodySchema = z.object({
             name: z.string(),
             date_meals: z.coerce.date().refine((data)=>{
@@ -39,28 +41,24 @@ export async function mealsRoutes(app:FastifyInstance){
             }, {
                 message: 'Invalid date'
             }),
-            within_diet: z.boolean()
+            within_diet: z.boolean(),
+            description: z.string()
+            
         })
 
 
-        const { name, date_meals, within_diet } = createMealBodySchema.parse( request.body )
+        const { name, date_meals, within_diet, description } = createMealBodySchema.parse( request.body )
 
-        let sessionId = request.cookies.sessionId
-
-        if(!sessionId){
-            sessionId = randomUUID()
-            reply.cookie('sessionId', sessionId, {
-                path: '/',
-                maxAge: 60 * 60 * 24 * 7, // 7 days
-            })
-        }
         
-        const meal = await knex('meals').insert({
+
+
+        await knex('meals').insert({
             id: randomUUID(),
             name,
             date_meals: date_meals.toISOString().slice(0, 19).replace("T", " "),
             within_diet,
-            session_id: sessionId,
+            description,
+            user_id: request.user?.id
         })
 
         return reply.status(201).send()
