@@ -13,7 +13,8 @@ describe('Users routes', () => {
     await app.close() // Fecha a aplicação, removendo-a da memória
   })
 
-  // método é executado antes de cada teste no bloco de teste
+  // método é executado antes de cada teste no bloco de teste;
+  // execSync => executa comandos do node
   beforeEach(() => {
     execSync('npm run knex migrate:rollback --all')
     execSync('npm run knex migrate:latest')
@@ -24,7 +25,7 @@ describe('Users routes', () => {
       .post('/users')
       .send({
         name: 'Henrique Barros',
-        email: 'henriquebarros2@live.com',
+        email: 'henriquebarros@live.com',
       })
       .expect(201)
 
