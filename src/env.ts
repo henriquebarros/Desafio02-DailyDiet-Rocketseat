@@ -1,7 +1,11 @@
 import { config } from 'dotenv'
 import { z } from 'zod'
 
-config()
+if (process.env.NODE_ENV === 'test') {
+  config({ path: '.env.test' })
+} else {
+  config()
+}
 
 const envShema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('production'),
